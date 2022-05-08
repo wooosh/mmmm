@@ -3,7 +3,7 @@
 
 #include "error.h"
 #include "arena.h"
-#include "hash.h"
+#include "kvmap.h"
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -13,8 +13,12 @@ void *Realloc(void *, size_t);
 void Free(void*);
 
 #define EnsureLen(alloc, cap, len)\
-  _EnsureLen((void**)(alloc), sizeof(**alloc), cap, len);
-void _EnsureLen(void **alloc, size_t elem_size, size_t *cap, size_t len);
+  EnsureLen_((void**)(alloc), sizeof(**alloc), cap, len);
+void EnsureLen_(void **alloc, size_t elem_size, size_t *cap, size_t len);
+
+#define Append(alloc, cap, len)\
+  Append_((void**)(alloc), sizeof(**alloc), cap, len);
+void *Append_(void **alloc, size_t elem_size, size_t *cap, size_t *len);
 
 struct Str {
   char *data;

@@ -5,8 +5,8 @@
 
 #define Die(msg)\
   Die_(__FILE__, __LINE__, __func__, (msg))
-void Die_(const char *filename, int lineno, const char *func,
-            const char *msg);
+void __attribute__((noreturn)) Die_(const char *filename, int lineno,
+                                    const char *func, const char *msg);
 
 #define Assume(condition, msg)\
   Assume_(__FILE__, __LINE__, __func__, (bool)(condition), (msg))

@@ -3,7 +3,6 @@
 #include "../common/common.h"
 
 #include "../ir/ssa.h"
-#include "lexer.h"
 
 #include <stdint.h>
 
@@ -65,6 +64,5 @@ struct AST_Graph {
   struct AST_Node *root;
 };
 
-struct AST_Graph Parse(struct TokenStream ts);
 void AST_Print(struct AST_Node *node, size_t indent);
 #endif

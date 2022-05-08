@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +21,7 @@ void Free(void *ptr) {
   free(ptr);
 }
 
-void _EnsureLen(void **alloc, size_t elem_size, size_t *cap, size_t len) {
+void EnsureLen_(void **alloc, size_t elem_size, size_t *cap, size_t len) {
   if (*cap < len) {
     if (*cap == 0) *cap = 1;
     while (*cap < len) {
@@ -28,6 +29,12 @@ void _EnsureLen(void **alloc, size_t elem_size, size_t *cap, size_t len) {
     }
     *alloc = realloc(*alloc, (*cap)*elem_size);
   }
+}
+
+void *Append_(void **alloc, size_t elem_size, size_t *cap, size_t *len) {
+  (*len)++;
+  EnsureLen_(alloc, elem_size, cap, *len);
+  return (void*) ((uintptr_t) *alloc + (*len-1) * elem_size);
 }
 
 struct File LoadFile(char *path) {

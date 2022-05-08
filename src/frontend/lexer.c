@@ -1,5 +1,5 @@
 #include "../common/common.h"
-#include "lexer.h"
+#include "passes.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -99,52 +99,16 @@ static bool Lexer_SkipComment(struct Lexer *l) {
 
 static bool Lexer_TrySymbol(struct Lexer *l, struct Token *token) {
   static struct Lexer_SymbolRule {
-    char symbol[3];
-    Lexer_SymbolKind kind;
+    char *symbol;
+    Token_Kind kind;
   } symbol_rules[] = {
     /* sorted so that symbols sharing a prefix have the longest symbol first */
-    {"&&", kLexer_Symbol_LogicalAnd},
-    {"&", kLexer_Symbol_BitwiseAnd},
-
-    {"||", kLexer_Symbol_LogicalOr},
-    {"|", kLexer_Symbol_BitwiseOr},
-
-    {"!=", kLexer_Symbol_CmpNotEq},
-    {"!",  kLexer_Symbol_LogicalNot},
-
-    {"<<", kLexer_Symbol_ShiftLeft},
-    {">>", kLexer_Symbol_ShiftRight},
-    {"<=", kLexer_Symbol_CmpLessEq},
-    {">=", kLexer_Symbol_CmpGreaterEq},
-    {"<", kLexer_Symbol_CmpLess},
-    {">", kLexer_Symbol_CmpGreater},
-
-    /* comparison operators */
-    {"==", kLexer_Symbol_CmpEq},
-    {"=", kLexer_Symbol_Equal},
-
-    {"++", kLexer_Symbol_Increment},
-    {"--", kLexer_Symbol_Decrement},
-
-    {"^", kLexer_Symbol_BitwiseXor},
-    {"~", kLexer_Symbol_BitwiseNot},
-
-    {"+", kLexer_Symbol_Plus},
-    {"-", kLexer_Symbol_Minus},
-    {"*", kLexer_Symbol_Multiply},
-    {"/", kLexer_Symbol_Divide},
-
-    {"(", kLexer_Symbol_ParenOpen},
-    {")", kLexer_Symbol_ParenClose},
-    {"[", kLexer_Symbol_BracketOpen},
-    {"]", kLexer_Symbol_BracketClose},
-    {"{", kLexer_Symbol_BraceOpen},
-    {"}", kLexer_Symbol_BraceClose},
-
-    {".", kLexer_Symbol_Dot},
-    {",", kLexer_Symbol_Comma},
-    {";", kLexer_Symbol_Semicolon},
-    {{0}, 0},
+    {"+", kToken_Symbol_Plus},
+    {"-", kToken_Symbol_Minus},
+    {";", kToken_Symbol_Semicolon},
+    {"=", kToken_Symbol_Equal},
+    {",", kToken_Symbol_Comma},
+    {NULL, 0},
   };
   size_t len = 2;
   if ((size_t)(l->end - l->idx) < len) {
@@ -152,11 +116,10 @@ static bool Lexer_TrySymbol(struct Lexer *l, struct Token *token) {
   }
   if (len == 0) return false;
 
-  for (size_t i=0; symbol_rules[i].symbol[0] != 0; i++) {
+  for (size_t i=0; symbol_rules[i].symbol != 0; i++) {
     size_t symbol_len = strlen(symbol_rules[i].symbol);
     if (memcmp(l->idx, symbol_rules[i].symbol, MinUint(symbol_len, len)) == 0) {
-      token->kind = kLexer_Token_Symbol;
-      token->value.sym_kind = symbol_rules[i].kind;
+      token->kind = symbol_rules[i].kind;
       token->offset = l->idx - l->start;
       token->len = symbol_len;
 
@@ -177,7 +140,7 @@ static bool Lexer_TryCharLiteral(struct Lexer *l, struct Token *token) {
     if (closing_quote == NULL || closing_quote - l->idx != 2) {
       Die("malformed character literal");
     }
-    token->kind = kLexer_Token_CharLiteral;
+    token->kind = kToken_CharLiteral;
     token->value.char_val = l->idx[1];
     token->offset = l->idx - l->start;
     token->len = closing_quote - l->idx + 1;
@@ -197,7 +160,7 @@ static bool Lexer_TryString(struct Lexer *l, struct Token *token) {
     if (closing_quote == NULL) {
       Die("malformed string");
     }
-    token->kind = kLexer_Token_String;
+    token->kind = kToken_String;
     // TODO: duplicate string
     token->value.string.data = l->idx + 1;
     token->value.string.len  = closing_quote - l->idx;
@@ -226,7 +189,7 @@ static bool Lexer_TryNumber(struct Lexer *l, struct Token *token) {
     Die("integer out of range");
   }
 
-  token->kind   = kLexer_Token_Integer;
+  token->kind   = kToken_Integer;
   token->offset = l->idx - l->start;
   token->len    = tail - l->idx;
   l->idx = tail;
@@ -238,11 +201,11 @@ static bool Lexer_TryNumber(struct Lexer *l, struct Token *token) {
 static bool Lexer_TryKeyword(struct Lexer *l, struct Token *token) {
   static struct KeywordRule {
     char *keyword;
-    Lexer_KeywordKind kind;
+    Token_Kind kind;
   } keyword_rules[] = {
-    {"if", kLexer_Keyword_If},
-    {"return", kLexer_Keyword_Return},
-    {"let", kLexer_Keyword_Let},
+    {"if", kToken_Keyword_If},
+    {"return", kToken_Keyword_Return},
+    {"let", kToken_Keyword_Let},
     {NULL, 0}
   };
 
@@ -253,10 +216,9 @@ static bool Lexer_TryKeyword(struct Lexer *l, struct Token *token) {
   for (size_t i = 0; keyword_rules[i].keyword != NULL; i++) {
     if (strlen(keyword_rules[i].keyword) == len
         && strncmp(l->idx, keyword_rules[i].keyword, len) == 0) {
-      token->kind = kLexer_Token_Keyword;
+      token->kind = keyword_rules[i].kind;
       token->offset = l->idx - l->start;
       token->len = len;
-      token->value.kw_kind = keyword_rules[i].kind;
       l->idx += len;
       return true;
     }
@@ -277,7 +239,7 @@ static bool Lexer_TryIdentifier(struct Lexer *l, struct Token *token) {
        && ((*tail >= 'a' && *tail <= 'z') || (*tail >= 'A' && *tail <= 'Z')
           || (*tail >= '0' && *tail <= '9'))) tail++;
 
-  token->kind   = kLexer_Token_Identifier;
+  token->kind   = kToken_Identifier;
   token->offset = l->idx - l->start;
   token->len    = tail - l->idx;
   token->value.name.data = l->idx;
