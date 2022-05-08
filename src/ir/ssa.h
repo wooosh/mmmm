@@ -53,6 +53,8 @@ enum {
   kSSA_Dep_Data,
   kSSA_Dep_Ctl,
   kSSA_Dep_Mem,
+  // TODO: remove const deps, make union with const ssa variable and set arity to zero
+  // or SSA_HasInst
   kSSA_Dep_Const
 };
 

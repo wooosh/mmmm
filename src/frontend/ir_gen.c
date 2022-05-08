@@ -21,7 +21,7 @@ struct IrGen {
   struct IrVariable *vars;
 };
 
-// TODO: enum for arg numbers of instructions
+// TODO: enum for arg indexes of instructions
 
 static struct SSA_Inst *GetVarAlloc(struct IrGen *ir, struct Str name) {
   for (size_t i=0; i<ir->vars_len; i++) {

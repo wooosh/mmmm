@@ -17,5 +17,5 @@ exe = executable('compile', [
 
   'src/ir/ssa.c',
 
-  #'src/codegen/codegen.c'
+  'src/codegen/codegen.c',
 ])

@@ -1,5 +1,6 @@
 #include "common/common.h"
 #include "frontend/passes.h"
+#include "codegen/codegen.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -30,7 +31,7 @@ void SSA_PrintInst(size_t *inst_id, size_t pass_id, struct SSA_Inst *inst) {
     [kSSA_Inst_Write] = "Write"
   };
 
-  printf("%zu = %s (", inst->pass_value.i, inst_name[inst->kind]);
+  printf("%3zu = %s(", inst->pass_value.i, inst_name[inst->kind]);
   for (size_t i=0; i<inst->arity; i++) {
     struct SSA_Dep dep = inst->deps[i];
     if (dep.kind == kSSA_Dep_Const) {
@@ -54,8 +55,9 @@ void SSA_PrintInst(size_t *inst_id, size_t pass_id, struct SSA_Inst *inst) {
 
 void SSA_PrintGraph(struct SSA_Graph *g) {
   // TODO: label control ranges in output
-  g->pass_id++;
   size_t inst_id = 0;
+  g->pass_id++;
+
   for (size_t i=0; i<g->roots_len; i++) {
     SSA_PrintInst(&inst_id, g->pass_id, g->roots[i]);
   }
@@ -79,7 +81,9 @@ int main(int argc, char **argv) {
   struct SSA_Graph ssa = GenerateIr(ast);
   //printf("digraph G {\n");
   //SSA_Print(ssa.roots[0]);
-  SSA_PrintGraph(&ssa);
+  //SSA_PrintGraph(&ssa);
+
+  CodeGen(&ssa);
 
   return EXIT_SUCCESS;
 }

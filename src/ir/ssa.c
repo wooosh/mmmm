@@ -21,6 +21,7 @@ static struct SSA_InstSig {
   [kSSA_Inst_ReturnVal] = INST_SIG(kSSA_Dep_Ctl, kSSA_Dep_Mem, kSSA_Dep_Data),
 
   /* memory instructions */
+  /* addr */
   [kSSA_Inst_Read] = INST_SIG(kSSA_Dep_Mem, kSSA_Dep_Data),
   /* address, value */
   [kSSA_Inst_Write] = INST_SIG(kSSA_Dep_Mem, kSSA_Dep_Data, kSSA_Dep_Data),
@@ -57,6 +58,7 @@ struct SSA_Inst *SSA_NewInst(
   struct SSA_Inst *inst = Arena_Alloc(ssa->arena, sizeof(struct SSA_Inst));
   inst->kind = kind;
   inst->arity = arity;
+  inst->pass_id = ssa->pass_id;
   inst->deps = Arena_Alloc(ssa->arena, arity*sizeof(struct SSA_Dep));
   for (size_t i=0; i<arity; i++) {
     inst->deps[i] = deps[i];
